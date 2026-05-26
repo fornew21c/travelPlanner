@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateShort, formatDuration, formatKRWCompact } from "@/lib/format";
+import type { Trip } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,11 @@ export const dynamic = "force-dynamic";
 export default async function SavedTripsPage() {
   const dict = await getDictionary();
   const supabase = await createSupabaseServerClient();
-  const { data: trips } = await supabase
+  const { data } = await supabase
     .from("trips")
-    .select("id, title, destination, start_date, end_date, duration_days, budget_krw, status, updated_at")
+    .select("*")
     .order("updated_at", { ascending: false });
+  const trips = (data ?? []) as Trip[];
 
   return (
     <div className="container space-y-6 py-8 md:py-12">
@@ -32,7 +34,7 @@ export default async function SavedTripsPage() {
         </Button>
       </header>
 
-      {trips && trips.length > 0 ? (
+      {trips.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
             <Link key={trip.id} href={`/trips/${trip.id}`}>
