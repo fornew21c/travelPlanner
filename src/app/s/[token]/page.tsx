@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateFull, formatDuration, formatKRW } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ItineraryDay, ItineraryItem, Trip } from "@/lib/supabase/database.types";
 
 import { DayTimeline } from "@/app/(app)/trips/[id]/_components/day-timeline";
 
@@ -17,36 +18,25 @@ interface PageProps {
 
 /**
  * Public read-only trip view via share token.
- * RLS policy `trips_select_by_share_token` allows anon reads when share_token is non-null;
- * the same is true for itinerary_days/items via their through-trip select policies.
+ * Reads go through the `get_shared_trip` SECURITY DEFINER RPC, which returns
+ * only the single trip whose share_token matches the token exactly. The trips/
+ * itinerary tables themselves are owner-only under RLS.
  */
 export default async function SharedTripPage({ params }: PageProps) {
   const { token } = await params;
   const dict = await getDictionary();
   const supabase = await createSupabaseServerClient();
 
-  const { data: trip } = await supabase
-    .from("trips")
-    .select("*")
-    .eq("share_token", token)
-    .maybeSingle();
-  if (!trip) notFound();
+  const { data } = await supabase.rpc("get_shared_trip", { p_token: token });
+  const shared = data as { trip: Trip; days: ItineraryDay[]; items: ItineraryItem[] } | null;
+  if (!shared?.trip) notFound();
 
-  const [{ data: days }, { data: items }] = await Promise.all([
-    supabase
-      .from("itinerary_days")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("day_index", { ascending: true }),
-    supabase
-      .from("itinerary_items")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("order_index", { ascending: true }),
-  ]);
+  const trip = shared.trip;
+  const days = shared.days ?? [];
+  const items = shared.items ?? [];
 
-  const itemsByDay = new Map<string, typeof items>();
-  (items ?? []).forEach((it) => {
+  const itemsByDay = new Map<string, ItineraryItem[]>();
+  items.forEach((it) => {
     const arr = itemsByDay.get(it.day_id) ?? [];
     arr.push(it);
     itemsByDay.set(it.day_id, arr);
