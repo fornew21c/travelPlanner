@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Calm premium indigo/teal accent */
+    --primary: 222 60% 24%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 16% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 200 96% 94%;
+    --accent-foreground: 200 80% 22%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 20% 91%;
+    --input: 214 20% 91%;
+    --ring: 222 60% 30%;
+
+    --radius: 0.875rem;
+  }
+
+  .dark {
+    --background: 224 30% 7%;
+    --foreground: 210 20% 96%;
+
+    --card: 224 28% 10%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 224 28% 10%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 210 20% 96%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 222 22% 16%;
+    --secondary-foreground: 210 20% 96%;
+
+    --muted: 222 22% 16%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 222 30% 18%;
+    --accent-foreground: 210 20% 96%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 210 20% 96%;
+
+    --border: 222 22% 18%;
+    --input: 222 22% 18%;
+    --ring: 215 25% 65%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1,
+      "ss01" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Korean line-break niceties */
+  h1, h2, h3, h4, h5, h6, p {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer utilities {
+  .gradient-hero {
+    background:
+      radial-gradient(ellipse at top, hsl(var(--accent)) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom left, hsl(210 100% 95%) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  .dark .gradient-hero {
+    background:
+      radial-gradient(ellipse at top, hsl(222 60% 18%) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom left, hsl(200 60% 14%) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
