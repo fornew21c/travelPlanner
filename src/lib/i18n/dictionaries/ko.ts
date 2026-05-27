@@ -145,4 +145,8 @@ export const ko = {
   },
 } as const;
 
-export type Dictionary = typeof ko;
+// Widen the `as const` literal strings back to `string` so other locale
+// dictionaries (en, ...) only need to match the *shape* of `ko`, not its exact
+// Korean text. Keeps key-level autocomplete and missing-key detection.
+type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> };
+export type Dictionary = Widen<typeof ko>;

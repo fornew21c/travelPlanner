@@ -51,7 +51,11 @@ function extractJson(text: string): string {
 }
 
 async function completeStructured<T>(
-  schema: z.ZodSchema<T>,
+  // Allow the schema's *input* type to differ from its output `T`. Zod's
+  // `.default()`/`.optional()` make parsed input optional while the inferred
+  // output (`z.infer`) is required, so `z.ZodSchema<T>` (input === output) would
+  // reject these schemas. We parse from `unknown` anyway.
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   prompt: { system: string; user: string },
   options?: { provider?: AIProviderName; temperature?: number; maxTokens?: number },
 ): Promise<{ data: T; provider: AIProviderName; model: string }> {
