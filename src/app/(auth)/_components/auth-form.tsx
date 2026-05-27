@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -28,7 +27,6 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode, redirectTo, dict }: AuthFormProps) {
-  const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
   const {
     register,
@@ -56,8 +54,12 @@ export function AuthForm({ mode, redirectTo, dict }: AuthFormProps) {
           password: values.password,
         });
         if (error) throw error;
-        router.replace(redirectTo);
-        router.refresh();
+        // Full-page navigation (not router.replace) so the next request carries
+        // the freshly-set auth cookies and the server middleware authenticates
+        // on the first try. A client-side nav here races the cookie write and
+        // bounced users back to /login, forcing repeated taps to log in.
+        window.location.assign(redirectTo);
+        return;
       }
     } catch (err) {
       toast.error((err as Error).message);
