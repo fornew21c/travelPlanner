@@ -109,12 +109,25 @@ DATE / TIME CONSISTENCY (CRITICAL — strictly follow):
 - Leave realistic travel/rest gaps between items (don't schedule two places back-to-back with 0 minutes when they are apart).
 - type="rest" / type="note" items may omit start_time/end_time if they are not time-bound.
 
-PLACE ACCURACY (CRITICAL — avoid hallucination):
-- Use ONLY real, well-known, currently-operating places that genuinely exist at the destination. Never invent place names.
-- Prefer famous landmarks and established, well-reviewed restaurants over obscure spots you are not confident exist.
-- If you are not certain of the exact street address, leave "address" as an EMPTY STRING "" rather than guessing. A wrong address is worse than none.
-- "location_name" should be the commonly used name of the place (Korean or local name travelers actually search for).
-- Do NOT fabricate phone numbers, specific opening hours, or exact prices you are unsure of — keep such details in "tips" with hedging (e.g., "방문 전 영업시간 확인 권장").
+PLACE NAMING (CRITICAL):
+- EVERY item MUST have a concrete, useful "title" and "location_name". Generic
+  placeholders are STRICTLY FORBIDDEN — never output things like "호텔 이름",
+  "레스토랑 이름", "맛집", "식당", or a bare "점심 식사"/"저녁 식사" with no place.
+- Name REAL, well-known places that famous travelers actually visit at the
+  destination (e.g., 오사카라면 "도톤보리 글리코 사인", "이치란 라멘 도톤보리점",
+  "오사카성"). Prefer famous, established spots over obscure ones.
+- restaurant: name a SPECIFIC real eatery when you can (title like
+  "점심 · 이치란 라멘"). If you genuinely can't recall one, recommend by AREA +
+  cuisine ("도톤보리 오코노미야키 거리", "구로몬 시장 길거리 음식") — still concrete,
+  never a placeholder. Put the dish/why in "description".
+- accommodation: the family hasn't booked yet, so DON'T invent a fake hotel
+  name. Instead recommend a specific AREA to stay near that day's plan
+  (location_name like "난바·신사이바시 인근 숙소"), and name 1–2 real, well-known
+  hotels in that area inside "tips". title like "난바 지역 호텔 체크인".
+- If unsure of the exact street address, leave "address" as an EMPTY STRING ""
+  rather than guessing — but the place NAME must still be concrete.
+- Do NOT fabricate phone numbers, exact opening hours, or precise prices you are
+  unsure of — keep those in "tips" with hedging (e.g., "방문 전 영업시간 확인 권장").
 
 AGE-AWARE GUIDANCE (CRITICAL — strictly follow):
 ${ageGuidance}
@@ -199,7 +212,7 @@ ${input.notes ? `- 추가 요청사항: ${input.notes}` : ""}
 
 특히 신경 써주세요:
 1. **반드시 정확히 ${input.durationDays}일치 일정** (day_index 1~${input.durationDays}, 누락/중복 없이)을 만들고, 각 날의 항목은 시간순으로 정렬하며 시간대가 겹치지 않게 하세요.
-2. **실제로 존재하는 유명한 장소만** 사용하고, 주소가 불확실하면 address는 빈 문자열로 두세요 (지어내지 마세요).
+2. **모든 항목에 실제 장소명을 구체적으로** 적으세요. "호텔 이름", "레스토랑 이름", "저녁 식사" 같은 placeholder는 절대 금지 — 식당은 실제 유명 맛집이나 "지역+음식"으로, 호텔은 추천 숙박 지역 + 실제 호텔 예시(tips)로 적으세요. 주소가 불확실하면 address만 빈 문자열로 둡니다.
 3. 아이가 있는 가족이므로 무리한 이동은 피하고, 오후 휴식 시간을 적절히 배치하며 화장실/수유실/유모차 접근 정보를 tips에 명시
 4. 식당은 한국인 가족 입맛에도 무난한 곳 위주, 예산 안에서 합리적으로 분배
 5. 첫날은 도착/체크인 고려, 마지막 날은 출국 고려${
