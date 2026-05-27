@@ -8,6 +8,7 @@ import {
   Camera,
   Check,
   Coffee,
+  ExternalLink,
   Loader2,
   MapPin,
   Pencil,
@@ -31,11 +32,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { buildHotelSearchUrl } from "@/lib/affiliate";
 import type { Dictionary } from "@/lib/i18n";
 import { formatKRW, formatTimeString } from "@/lib/format";
 import type { ItineraryItem, ItineraryItemType } from "@/lib/supabase/database.types";
 
 import { updateItineraryItemAction, type ItemUpdateInput } from "../actions";
+
+/** Trip context used to pre-fill the hotel-search link on accommodation items. */
+export interface HotelSearchContext {
+  destination: string;
+  startDate: string;
+  endDate: string;
+  adults: number;
+  children: number;
+}
 
 const ICONS: Record<ItineraryItemType, React.ComponentType<{ className?: string }>> = {
   attraction: Camera,
@@ -67,9 +78,18 @@ interface ItineraryItemRowProps {
   /** When true (owner view), show edit affordance. Omitted on the public share page. */
   editable?: boolean;
   tripId?: string;
+  /** Enables the hotel-search link on accommodation items. */
+  hotelContext?: HotelSearchContext;
 }
 
-export function ItineraryItemRow({ item, idx, dict, editable, tripId }: ItineraryItemRowProps) {
+export function ItineraryItemRow({
+  item,
+  idx,
+  dict,
+  editable,
+  tripId,
+  hotelContext,
+}: ItineraryItemRowProps) {
   const [editing, setEditing] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
   const Icon = ICONS[item.type];
@@ -166,6 +186,23 @@ export function ItineraryItemRow({ item, idx, dict, editable, tripId }: Itinerar
         <p className="mt-2 text-xs text-muted-foreground">
           숙박비는 시즌·등급에 따라 변동이 커서 별도로 검색을 권장합니다.
         </p>
+      )}
+      {item.type === "accommodation" && hotelContext && (
+        <a
+          href={buildHotelSearchUrl({
+            query: item.location_name || hotelContext.destination,
+            checkIn: hotelContext.startDate,
+            checkOut: hotelContext.endDate,
+            adults: hotelContext.adults,
+            children: hotelContext.children,
+          })}
+          target="_blank"
+          rel="noopener noreferrer nofollow sponsored"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+        >
+          <Bed className="h-3.5 w-3.5" /> 이 지역 호텔 가격·예약 보기
+          <ExternalLink className="h-3 w-3" />
+        </a>
       )}
     </motion.li>
   );

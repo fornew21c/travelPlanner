@@ -93,6 +93,13 @@ export default async function SharedTripPage({ params }: PageProps) {
             day={day}
             items={(itemsByDay.get(day.id) ?? []).slice().sort((a, b) => a.order_index - b.order_index)}
             dict={dict}
+            hotelContext={{
+              destination: trip.destination,
+              startDate: trip.start_date,
+              endDate: trip.end_date,
+              adults: trip.adults,
+              children: trip.children,
+            }}
           />
         ))}
       </div>
