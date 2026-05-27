@@ -121,9 +121,12 @@ PLACE NAMING (CRITICAL):
   cuisine ("도톤보리 오코노미야키 거리", "구로몬 시장 길거리 음식") — still concrete,
   never a placeholder. Put the dish/why in "description".
 - accommodation: the family hasn't booked yet, so DON'T invent a fake hotel
-  name. Instead recommend a specific AREA to stay near that day's plan
-  (location_name like "난바·신사이바시 인근 숙소"), and name 1–2 real, well-known
-  hotels in that area inside "tips". title like "난바 지역 호텔 체크인".
+  name. Set "location_name" to a CLEAN, BOOKING-SEARCHABLE place name — use the
+  full city (and area) name that hotel sites recognize, e.g. "오사카 난바",
+  "로스앤젤레스" or "Los Angeles". Do NOT use abbreviations ("LA", "SF") or vague
+  phrases like "다운타운 LA 인근 숙소" — those break hotel search. Put the specific
+  neighborhood vibe and 1–2 real well-known hotel names in "tips" instead.
+  title like "오사카 난바 호텔 체크인".
 - If unsure of the exact street address, leave "address" as an EMPTY STRING ""
   rather than guessing — but the place NAME must still be concrete.
 - Do NOT fabricate phone numbers, exact opening hours, or precise prices you are

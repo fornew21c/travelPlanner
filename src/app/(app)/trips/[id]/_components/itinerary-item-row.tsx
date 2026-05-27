@@ -71,12 +71,26 @@ const TYPES: ItineraryItemType[] = [
 // Postgres `time` comes back as "HH:MM:SS"; <input type="time"> wants "HH:MM".
 const toTimeInput = (t: string | null) => (t ? t.slice(0, 5) : "");
 
-// "다운타운 LA 인근 숙소" → "다운타운 LA". Strip the Korean qualifier words the AI
-// appends to a stay AREA so the booking site gets a clean, searchable location.
+// Booking's free-text search mis-resolves vague Korean phrases (e.g. "다운타운
+// LA" was read as Chicago). Reduce the AI's stay-area string to a clean,
+// recognizable city: strip qualifier/neighborhood words, then expand common
+// abbreviations to the full city name booking resolves reliably.
+const CITY_ALIASES: Record<string, string> = {
+  LA: "Los Angeles",
+  SF: "San Francisco",
+  NYC: "New York",
+  뉴욕: "New York",
+};
+
 function cleanStayQuery(raw: string): string {
-  return raw
-    .replace(/(인근|근처|주변|일대|지역|추천|숙소|호텔들?)/g, " ")
+  const stripped = raw
+    .replace(/(인근|근처|주변|일대|지역|추천|숙소|호텔들?|다운타운|도심|시내|중심가|구시가지?|신시가지?)/g, " ")
     .replace(/\s+/g, " ")
+    .trim();
+  return stripped
+    .split(" ")
+    .map((w) => CITY_ALIASES[w] ?? w)
+    .join(" ")
     .trim();
 }
 
