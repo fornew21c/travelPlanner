@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -28,7 +27,8 @@ export async function deleteTripAction(tripId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
   revalidatePath("/trips");
-  redirect("/trips");
+  // Navigation is done client-side. Calling redirect() here would throw
+  // NEXT_REDIRECT, which the caller's try/catch surfaces as a fake error toast.
 }
 
 export async function duplicateTripAction(tripId: string) {
@@ -105,7 +105,8 @@ export async function duplicateTripAction(tripId: string) {
 
   revalidatePath("/dashboard");
   revalidatePath("/trips");
-  redirect(`/trips/${copy.id}`);
+  // Return the new id so the client can navigate (see deleteTripAction note).
+  return { id: copy.id };
 }
 
 export async function toggleShareAction(tripId: string) {
