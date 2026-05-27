@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
-import { Calendar, MapPin, Users, Wallet } from "lucide-react";
+import { BedDouble, Calendar, MapPin, Users, Wallet } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { buildHotelSearchUrl } from "@/lib/affiliate";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateFull, formatDuration, formatKRW } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -76,7 +78,24 @@ export default async function TripDetailPage({ params }: PageProps) {
               <p className="max-w-3xl text-muted-foreground">{trip.ai_summary}</p>
             )}
           </div>
-          <TripActions tripId={trip.id} hasShare={Boolean(trip.share_token)} shareToken={trip.share_token} />
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={buildHotelSearchUrl({
+                  query: trip.destination,
+                  checkIn: trip.start_date,
+                  checkOut: trip.end_date,
+                  adults: trip.adults,
+                  children: trip.children,
+                })}
+                target="_blank"
+                rel="noopener noreferrer nofollow sponsored"
+              >
+                <BedDouble className="h-4 w-4" /> 호텔 검색
+              </a>
+            </Button>
+            <TripActions tripId={trip.id} hasShare={Boolean(trip.share_token)} shareToken={trip.share_token} />
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
@@ -105,6 +124,13 @@ export default async function TripDetailPage({ params }: PageProps) {
               dict={dict}
               editable
               tripId={trip.id}
+              hotelContext={{
+                destination: trip.destination,
+                startDate: trip.start_date,
+                endDate: trip.end_date,
+                adults: trip.adults,
+                children: trip.children,
+              }}
             />
           ))}
         </TabsContent>

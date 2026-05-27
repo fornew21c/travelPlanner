@@ -5,7 +5,7 @@ import type { Dictionary } from "@/lib/i18n";
 import { formatDateFull } from "@/lib/format";
 import type { ItineraryDay, ItineraryItem } from "@/lib/supabase/database.types";
 
-import { ItineraryItemRow } from "./itinerary-item-row";
+import { ItineraryItemRow, type HotelSearchContext } from "./itinerary-item-row";
 
 interface DayTimelineProps {
   day: ItineraryDay;
@@ -14,9 +14,11 @@ interface DayTimelineProps {
   /** Owner view: enables per-item inline editing. Omitted on the public share page. */
   editable?: boolean;
   tripId?: string;
+  /** Trip dates/party size used to pre-fill the hotel-search link on lodging items. */
+  hotelContext?: HotelSearchContext;
 }
 
-export function DayTimeline({ day, items, dict, editable, tripId }: DayTimelineProps) {
+export function DayTimeline({ day, items, dict, editable, tripId, hotelContext }: DayTimelineProps) {
   return (
     <Card>
       <CardHeader>
@@ -40,6 +42,7 @@ export function DayTimeline({ day, items, dict, editable, tripId }: DayTimelineP
               dict={dict}
               editable={editable}
               tripId={tripId}
+              hotelContext={hotelContext}
             />
           ))}
         </ol>
