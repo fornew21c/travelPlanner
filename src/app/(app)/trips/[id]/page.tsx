@@ -103,6 +103,8 @@ export default async function TripDetailPage({ params }: PageProps) {
               day={day}
               items={(itemsByDay.get(day.id) ?? []).slice().sort((a, b) => a.order_index - b.order_index)}
               dict={dict}
+              editable
+              tripId={trip.id}
             />
           ))}
         </TabsContent>

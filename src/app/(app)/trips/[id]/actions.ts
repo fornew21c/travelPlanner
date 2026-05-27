@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateShareToken } from "@/lib/utils";
@@ -117,6 +118,49 @@ export async function toggleShareAction(tripId: string) {
   if (error) throw new Error(error.message);
   revalidatePath(`/trips/${tripId}`);
   return { shareToken: nextToken };
+}
+
+// Inline-edit of a single itinerary item. Empty time/text fields normalize to
+// null so we don't persist "" into nullable columns. Owner is verified via the
+// trip; RLS (`items_cud_via_trip`) is the second line of defense.
+const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
+const itemUpdateSchema = z.object({
+  title: z.string().trim().min(1, "제목을 입력해주세요").max(200),
+  type: z.enum([
+    "attraction",
+    "restaurant",
+    "transport",
+    "accommodation",
+    "activity",
+    "rest",
+    "note",
+  ]),
+  start_time: z.preprocess(emptyToNull, z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable()),
+  end_time: z.preprocess(emptyToNull, z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable()),
+  location_name: z.preprocess(emptyToNull, z.string().max(200).nullable()),
+  description: z.preprocess(emptyToNull, z.string().max(2000).nullable()),
+  tips: z.preprocess(emptyToNull, z.string().max(1000).nullable()),
+  estimated_cost_krw: z.coerce.number().int().min(0).max(1_000_000_000),
+  child_friendly: z.boolean(),
+});
+
+export type ItemUpdateInput = z.input<typeof itemUpdateSchema>;
+
+export async function updateItineraryItemAction(
+  itemId: string,
+  tripId: string,
+  input: ItemUpdateInput,
+) {
+  const { supabase } = await ensureOwner(tripId);
+  const values = itemUpdateSchema.parse(input);
+  const { error } = await supabase
+    .from("itinerary_items")
+    .update(values)
+    .eq("id", itemId)
+    .eq("trip_id", tripId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function togglePackingItemAction(itemId: string, checked: boolean) {
