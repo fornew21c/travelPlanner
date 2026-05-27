@@ -90,6 +90,7 @@ export const en: Dictionary = {
     exportPdf: "Export PDF",
     delete: "Delete",
     childFriendly: "Kid-friendly",
+    childCaution: "Not ideal for kids",
     saved: "Saved",
     shareCopied: "Share link copied",
   },
