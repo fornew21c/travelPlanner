@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateFull, formatDuration, formatKRW } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ItineraryDay, ItineraryItem, Trip } from "@/lib/supabase/database.types";
 
 import { DayTimeline } from "@/app/(app)/trips/[id]/_components/day-timeline";
 
@@ -15,35 +16,30 @@ interface PageProps {
   params: Promise<{ token: string }>;
 }
 
+// Public payload returned by the get_shared_trip RPC. user_id is stripped server-side.
+type SharedTripPayload = {
+  trip: Omit<Trip, "user_id">;
+  days: ItineraryDay[];
+  items: ItineraryItem[];
+};
+
 /**
  * Public read-only trip view via share token.
- * RLS policy `trips_select_by_share_token` allows anon reads when share_token is non-null;
- * the same is true for itinerary_days/items via their through-trip select policies.
+ *
+ * Reads go through the `get_shared_trip` SECURITY DEFINER RPC, which returns
+ * only the trip matching the exact token. The tables themselves are no longer
+ * anon-readable, so a shared link can't be used to enumerate other trips.
  */
 export default async function SharedTripPage({ params }: PageProps) {
   const { token } = await params;
   const dict = await getDictionary();
   const supabase = await createSupabaseServerClient();
 
-  const { data: trip } = await supabase
-    .from("trips")
-    .select("*")
-    .eq("share_token", token)
-    .maybeSingle();
-  if (!trip) notFound();
+  const { data } = await supabase.rpc("get_shared_trip", { p_token: token });
+  const payload = data as SharedTripPayload | null;
+  if (!payload) notFound();
 
-  const [{ data: days }, { data: items }] = await Promise.all([
-    supabase
-      .from("itinerary_days")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("day_index", { ascending: true }),
-    supabase
-      .from("itinerary_items")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("order_index", { ascending: true }),
-  ]);
+  const { trip, days, items } = payload;
 
   const itemsByDay = new Map<string, typeof items>();
   (items ?? []).forEach((it) => {

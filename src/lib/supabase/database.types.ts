@@ -347,7 +347,12 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_shared_trip: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+    };
     Enums: {
       travel_style: TravelStyle;
       transport_pref: TransportPref;
