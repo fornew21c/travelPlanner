@@ -48,6 +48,7 @@ export function AuthForm({ mode, redirectTo, dict }: AuthFormProps) {
         });
         if (error) throw error;
         toast.success("확인 메일을 보냈어요. 이메일을 확인해주세요.");
+        setSubmitting(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: values.email,
@@ -58,12 +59,12 @@ export function AuthForm({ mode, redirectTo, dict }: AuthFormProps) {
         // the freshly-set auth cookies and the server middleware authenticates
         // on the first try. A client-side nav here races the cookie write and
         // bounced users back to /login, forcing repeated taps to log in.
+        // Keep `submitting` true (button disabled) until the page unloads so a
+        // brief re-enable can't let the user double-submit during navigation.
         window.location.assign(redirectTo);
-        return;
       }
     } catch (err) {
       toast.error((err as Error).message);
-    } finally {
       setSubmitting(false);
     }
   }
