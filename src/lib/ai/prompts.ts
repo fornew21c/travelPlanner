@@ -74,7 +74,24 @@ export function buildItineraryPrompt(input: ItineraryPromptInput): {
 - tips에는 인스타 스폿, 액티비티 강도, 자유시간 여부 같은 정보를 적으세요.
 - 박물관/액티비티 시간을 더 길게 잡아도 됩니다.`;
 
+  const trimmedNotes = input.notes?.trim();
+  const userRequestSection = trimmedNotes
+    ? `
+
+USER'S EXPLICIT REQUESTS (HIGHEST PRIORITY — override defaults):
+The user wrote the following request. Treat it as a HARD constraint that takes
+precedence over generic stylistic choices. Reflect it concretely in the actual
+items (not just the summary). If it names a place, occasion, dietary need, or
+must-do, build the relevant day around it.
+"""
+${trimmedNotes}
+"""
+If a request cannot be honored (e.g., place doesn't exist at the destination),
+acknowledge it briefly in the day's "summary" and offer the closest alternative.`
+    : "";
+
   const system = `You are an expert family travel planner specializing in trips for Korean families with children.
+${userRequestSection}
 
 OUTPUT REQUIREMENTS (strict):
 - Respond with ONE valid JSON object only — no prose, no markdown fences.
@@ -83,6 +100,21 @@ OUTPUT REQUIREMENTS (strict):
 - Costs are integers in KRW (Korean Won).
 - Times are 24h "HH:MM" strings.
 - Each day has 4–7 items balancing meals, attractions, and rest.
+
+DATE / TIME CONSISTENCY (CRITICAL — strictly follow):
+- The "days" array MUST contain EXACTLY ${input.durationDays} entries — no more, no fewer.
+- "day_index" MUST run 1, 2, 3, … up to ${input.durationDays} with no gaps, no duplicates, in order.
+- Within each day, list items in CHRONOLOGICAL order by start_time (earliest first).
+- Item time ranges within a day MUST NOT overlap, and end_time MUST be later than start_time.
+- Leave realistic travel/rest gaps between items (don't schedule two places back-to-back with 0 minutes when they are apart).
+- type="rest" / type="note" items may omit start_time/end_time if they are not time-bound.
+
+PLACE ACCURACY (CRITICAL — avoid hallucination):
+- Use ONLY real, well-known, currently-operating places that genuinely exist at the destination. Never invent place names.
+- Prefer famous landmarks and established, well-reviewed restaurants over obscure spots you are not confident exist.
+- If you are not certain of the exact street address, leave "address" as an EMPTY STRING "" rather than guessing. A wrong address is worse than none.
+- "location_name" should be the commonly used name of the place (Korean or local name travelers actually search for).
+- Do NOT fabricate phone numbers, specific opening hours, or exact prices you are unsure of — keep such details in "tips" with hedging (e.g., "방문 전 영업시간 확인 권장").
 
 AGE-AWARE GUIDANCE (CRITICAL — strictly follow):
 ${ageGuidance}
@@ -166,11 +198,16 @@ JSON schema:
 ${input.notes ? `- 추가 요청사항: ${input.notes}` : ""}
 
 특히 신경 써주세요:
-1. 아이가 있는 가족이므로 무리한 이동은 피하고, 오후 휴식 시간을 적절히 배치
-2. 화장실/수유실/유모차 접근 가능 여부를 tips에 명시
-3. 식당은 한국인 가족 입맛에도 무난한 곳 위주
-4. 예산 안에서 합리적으로 분배 (총합이 예산을 크게 초과하지 않게)
-5. 첫날은 도착/체크인 고려, 마지막 날은 출국 고려`;
+1. **반드시 정확히 ${input.durationDays}일치 일정** (day_index 1~${input.durationDays}, 누락/중복 없이)을 만들고, 각 날의 항목은 시간순으로 정렬하며 시간대가 겹치지 않게 하세요.
+2. **실제로 존재하는 유명한 장소만** 사용하고, 주소가 불확실하면 address는 빈 문자열로 두세요 (지어내지 마세요).
+3. 아이가 있는 가족이므로 무리한 이동은 피하고, 오후 휴식 시간을 적절히 배치하며 화장실/수유실/유모차 접근 정보를 tips에 명시
+4. 식당은 한국인 가족 입맛에도 무난한 곳 위주, 예산 안에서 합리적으로 분배
+5. 첫날은 도착/체크인 고려, 마지막 날은 출국 고려${
+    trimmedNotes
+      ? `
+6. **위 시스템 지시의 '추가 요청사항'을 최우선으로 반영** — 실제 항목에 구체적으로 녹여주세요.`
+      : ""
+  }`;
 
   return { system, user };
 }
