@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Copy, Loader2, MoreHorizontal, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ interface TripActionsProps {
 }
 
 export function TripActions({ tripId, hasShare, shareToken }: TripActionsProps) {
+  const router = useRouter();
   const [pending, startTransition] = React.useTransition();
 
   function handleShare() {
@@ -44,7 +46,8 @@ export function TripActions({ tripId, hasShare, shareToken }: TripActionsProps) 
   function handleDuplicate() {
     startTransition(async () => {
       try {
-        await duplicateTripAction(tripId);
+        const { id } = await duplicateTripAction(tripId);
+        router.push(`/trips/${id}`);
       } catch (err) {
         toast.error((err as Error).message);
       }
@@ -56,6 +59,8 @@ export function TripActions({ tripId, hasShare, shareToken }: TripActionsProps) 
     startTransition(async () => {
       try {
         await deleteTripAction(tripId);
+        router.push("/trips");
+        router.refresh();
       } catch (err) {
         toast.error((err as Error).message);
       }
