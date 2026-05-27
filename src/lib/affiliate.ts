@@ -27,6 +27,7 @@ const PROVIDER: HotelProvider =
   process.env.NEXT_PUBLIC_HOTEL_PROVIDER === "agoda" ? "agoda" : "booking";
 const BOOKING_AID = process.env.NEXT_PUBLIC_BOOKING_AID;
 const AGODA_CID = process.env.NEXT_PUBLIC_AGODA_CID;
+const KLOOK_AID = process.env.NEXT_PUBLIC_KLOOK_AID;
 
 export interface HotelSearchParams {
   /** Free-text location: a city, area, or "OO 인근 숙소". */
@@ -70,5 +71,25 @@ export function buildHotelSearchUrl(params: HotelSearchParams): string {
 /** Which provider the hotel links point at. */
 export const hotelProvider = PROVIDER;
 
-/** True when commission tracking is active (affiliate id set for the provider). */
+/** True when hotel commission tracking is active (affiliate id set for the provider). */
 export const isAffiliateEnabled = Boolean(PROVIDER === "agoda" ? AGODA_CID : BOOKING_AID);
+
+/**
+ * Build a Klook activity/ticket search URL for an attraction or destination.
+ * Klook's free-text search reliably pre-fills (verified: query param preserved,
+ * 200 OK). Returns a plain search link when no affiliate id is configured.
+ *
+ *   NEXT_PUBLIC_KLOOK_AID = Klook affiliate id
+ *
+ * Note: the exact Klook affiliate parameter can differ by program
+ * (Partnerize/Travelpayouts) — `aid` is the scaffold; adjust on signup.
+ */
+export function buildActivitySearchUrl(params: { query: string }): string {
+  const url = new URL("https://www.klook.com/search/result/");
+  url.searchParams.set("query", params.query);
+  if (KLOOK_AID) url.searchParams.set("aid", KLOOK_AID);
+  return url.toString();
+}
+
+/** True when activity commission tracking is active. */
+export const isActivityAffiliateEnabled = Boolean(KLOOK_AID);

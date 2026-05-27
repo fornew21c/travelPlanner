@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { buildHotelSearchUrl } from "@/lib/affiliate";
+import { buildActivitySearchUrl, buildHotelSearchUrl } from "@/lib/affiliate";
 import type { Dictionary } from "@/lib/i18n";
 import { formatKRW, formatTimeString } from "@/lib/format";
 import type { ItineraryItem, ItineraryItemType } from "@/lib/supabase/database.types";
@@ -239,6 +239,19 @@ export function ItineraryItemRow({
           className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
         >
           <Bed className="h-3.5 w-3.5" /> 이 지역 호텔 가격·예약 보기
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+      {(item.type === "attraction" || item.type === "activity") && hotelContext && (
+        <a
+          href={buildActivitySearchUrl({
+            query: item.location_name || item.title || hotelContext.destination,
+          })}
+          target="_blank"
+          rel="noopener noreferrer nofollow sponsored"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+        >
+          <Camera className="h-3.5 w-3.5" /> 투어·입장권 예약 보기
           <ExternalLink className="h-3 w-3" />
         </a>
       )}
