@@ -9,6 +9,8 @@ import { formatDateShort, formatDuration, formatKRWCompact } from "@/lib/format"
 import type { Trip } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { DeleteTripButton } from "@/app/(app)/_components/delete-trip-button";
+
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
@@ -61,9 +63,12 @@ export default async function DashboardPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="line-clamp-1 text-lg">{trip.title}</CardTitle>
-                      <Badge variant={trip.status === "generated" ? "info" : "outline"}>
-                        {trip.status === "generated" ? "AI 생성" : "임시저장"}
-                      </Badge>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Badge variant={trip.status === "generated" ? "info" : "outline"}>
+                          {trip.status === "generated" ? "AI 생성" : "임시저장"}
+                        </Badge>
+                        <DeleteTripButton tripId={trip.id} title={trip.title} />
+                      </div>
                     </div>
                     <CardDescription className="line-clamp-1">{trip.destination}</CardDescription>
                   </CardHeader>
