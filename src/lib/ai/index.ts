@@ -9,6 +9,7 @@ import {
   type PackingPromptInput,
 } from "./prompts";
 import {
+  itineraryDaySchema,
   itineraryResponseSchema,
   packingResponseSchema,
   type ItineraryResponse,
@@ -104,8 +105,27 @@ export async function generateItinerary(
   // Scale tokens with trip length so long itineraries don't get truncated.
   // gpt-4o-mini supports up to 16384 output tokens.
   const maxTokens = Math.min(16000, 2000 + input.durationDays * 1200);
+
+  // Enforce date consistency at the schema level: exactly durationDays days,
+  // with day_index forming a contiguous 1..N sequence. The prompt asks for this
+  // too; this is the hard backstop so a miscounted itinerary fails validation
+  // (the action keeps the draft and surfaces an error) rather than silently
+  // producing a trip with the wrong number of days.
+  const constrainedSchema = itineraryResponseSchema.extend({
+    days: z
+      .array(itineraryDaySchema)
+      .length(input.durationDays, `정확히 ${input.durationDays}일치 일정이 필요합니다`)
+      .refine(
+        (days) => {
+          const indices = days.map((d) => d.day_index).sort((a, b) => a - b);
+          return indices.every((v, i) => v === i + 1);
+        },
+        { message: "day_index는 1부터 빠짐/중복 없이 연속이어야 합니다" },
+      ),
+  });
+
   return completeStructured<ItineraryResponse>(
-    itineraryResponseSchema,
+    constrainedSchema,
     buildItineraryPrompt(input),
     { ...options, maxTokens, temperature: 0.7 },
   );
