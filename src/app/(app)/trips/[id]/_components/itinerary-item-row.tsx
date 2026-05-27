@@ -71,6 +71,22 @@ const TYPES: ItineraryItemType[] = [
 // Postgres `time` comes back as "HH:MM:SS"; <input type="time"> wants "HH:MM".
 const toTimeInput = (t: string | null) => (t ? t.slice(0, 5) : "");
 
+// "다운타운 LA 인근 숙소" → "다운타운 LA". Strip the Korean qualifier words the AI
+// appends to a stay AREA so the booking site gets a clean, searchable location.
+function cleanStayQuery(raw: string): string {
+  return raw
+    .replace(/(인근|근처|주변|일대|지역|추천|숙소|호텔들?)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Add N days to an ISO date ("YYYY-MM-DD") without timezone drift.
+function addDaysISO(iso: string, n: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 interface ItineraryItemRowProps {
   item: ItineraryItem;
   idx: number;
@@ -80,6 +96,8 @@ interface ItineraryItemRowProps {
   tripId?: string;
   /** Enables the hotel-search link on accommodation items. */
   hotelContext?: HotelSearchContext;
+  /** This item's day date ("YYYY-MM-DD"); used to scope the hotel link to one night. */
+  dayDate?: string;
 }
 
 export function ItineraryItemRow({
@@ -89,6 +107,7 @@ export function ItineraryItemRow({
   editable,
   tripId,
   hotelContext,
+  dayDate,
 }: ItineraryItemRowProps) {
   const [editing, setEditing] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
@@ -190,9 +209,11 @@ export function ItineraryItemRow({
       {item.type === "accommodation" && hotelContext && (
         <a
           href={buildHotelSearchUrl({
-            query: item.location_name || hotelContext.destination,
-            checkIn: hotelContext.startDate,
-            checkOut: hotelContext.endDate,
+            // Use this day's stay area (cleaned) and a 1-night window from the
+            // day's date — not the whole multi-city trip span.
+            query: cleanStayQuery(item.location_name || "") || hotelContext.destination,
+            checkIn: dayDate ?? hotelContext.startDate,
+            checkOut: dayDate ? addDaysISO(dayDate, 1) : hotelContext.endDate,
             adults: hotelContext.adults,
             children: hotelContext.children,
           })}

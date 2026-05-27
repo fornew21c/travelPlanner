@@ -43,6 +43,7 @@ export function DayTimeline({ day, items, dict, editable, tripId, hotelContext }
               editable={editable}
               tripId={tripId}
               hotelContext={hotelContext}
+              dayDate={day.date}
             />
           ))}
         </ol>
