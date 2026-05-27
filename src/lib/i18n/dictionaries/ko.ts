@@ -83,6 +83,7 @@ export const ko = {
     exportPdf: "PDF 내보내기",
     delete: "삭제",
     childFriendly: "아이 친화",
+    childCaution: "아이 동반 주의",
     saved: "저장되었어요",
     shareCopied: "공유 링크가 복사되었어요",
   },

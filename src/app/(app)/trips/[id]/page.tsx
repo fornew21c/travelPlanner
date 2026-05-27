@@ -131,6 +131,7 @@ export default async function TripDetailPage({ params }: PageProps) {
                 adults: trip.adults,
                 children: trip.children,
               }}
+              tripChildren={trip.children}
             />
           ))}
         </TabsContent>

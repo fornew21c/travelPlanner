@@ -100,6 +100,7 @@ export default async function SharedTripPage({ params }: PageProps) {
               adults: trip.adults,
               children: trip.children,
             }}
+            tripChildren={trip.children}
           />
         ))}
       </div>

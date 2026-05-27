@@ -16,9 +16,19 @@ interface DayTimelineProps {
   tripId?: string;
   /** Trip dates/party size used to pre-fill the hotel-search link on lodging items. */
   hotelContext?: HotelSearchContext;
+  /** Number of children on the trip; controls child-suitability badges. */
+  tripChildren?: number;
 }
 
-export function DayTimeline({ day, items, dict, editable, tripId, hotelContext }: DayTimelineProps) {
+export function DayTimeline({
+  day,
+  items,
+  dict,
+  editable,
+  tripId,
+  hotelContext,
+  tripChildren,
+}: DayTimelineProps) {
   return (
     <Card>
       <CardHeader>
@@ -44,6 +54,7 @@ export function DayTimeline({ day, items, dict, editable, tripId, hotelContext }
               tripId={tripId}
               hotelContext={hotelContext}
               dayDate={day.date}
+              tripChildren={tripChildren}
             />
           ))}
         </ol>

@@ -112,6 +112,8 @@ interface ItineraryItemRowProps {
   hotelContext?: HotelSearchContext;
   /** This item's day date ("YYYY-MM-DD"); used to scope the hotel link to one night. */
   dayDate?: string;
+  /** Number of children on the trip; child-suitability is only shown when > 0. */
+  tripChildren?: number;
 }
 
 export function ItineraryItemRow({
@@ -122,6 +124,7 @@ export function ItineraryItemRow({
   tripId,
   hotelContext,
   dayDate,
+  tripChildren,
 }: ItineraryItemRowProps) {
   const [editing, setEditing] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
@@ -189,9 +192,9 @@ export function ItineraryItemRow({
         <Badge variant="secondary" className="text-[10px]">
           {dict.itemType[item.type]}
         </Badge>
-        {item.child_friendly && (
-          <Badge variant="success" className="text-[10px]">
-            {dict.result.childFriendly}
+        {(tripChildren ?? 0) > 0 && !item.child_friendly && (
+          <Badge variant="warning" className="text-[10px]">
+            {dict.result.childCaution}
           </Badge>
         )}
       </div>
