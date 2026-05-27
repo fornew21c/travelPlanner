@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import { BedDouble, Calendar, MapPin, Users, Wallet } from "lucide-react";
+import { BedDouble, Calendar, MapPin, Ticket, Users, Wallet } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buildHotelSearchUrl } from "@/lib/affiliate";
+import { buildActivitySearchUrl, buildHotelSearchUrl } from "@/lib/affiliate";
 import { getDictionary } from "@/lib/i18n";
 import { formatDateFull, formatDuration, formatKRW } from "@/lib/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -92,6 +92,15 @@ export default async function TripDetailPage({ params }: PageProps) {
                 rel="noopener noreferrer nofollow sponsored"
               >
                 <BedDouble className="h-4 w-4" /> 호텔 검색
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={buildActivitySearchUrl({ query: trip.destination })}
+                target="_blank"
+                rel="noopener noreferrer nofollow sponsored"
+              >
+                <Ticket className="h-4 w-4" /> 투어·입장권
               </a>
             </Button>
             <TripActions tripId={trip.id} hasShare={Boolean(trip.share_token)} shareToken={trip.share_token} />
