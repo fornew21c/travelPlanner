@@ -58,8 +58,9 @@ async function checkRateLimit(
  * 4. Persists days, items, and packing items in a single transaction-like flow.
  * 5. Redirects to the result page.
  *
- * On any failure after the draft is created, the draft remains visible
- * in the user's dashboard with status='draft' so nothing is lost.
+ * On any failure after the draft is created, the empty draft is deleted
+ * (failAndCleanup) so a failed generation doesn't leave an orphan "임시" card.
+ * The AI step itself retries once internally before surfacing an error.
  */
 export async function generateTripAction(
   _prev: GenerateTripState,
@@ -108,6 +109,14 @@ export async function generateTripAction(
     .single();
   if (tripErr || !trip) return { error: tripErr?.message ?? "여행을 저장하지 못했습니다" };
 
+  // Any failure after this point should remove the empty draft so a failed
+  // generation doesn't leave a confusing "임시" card on the dashboard. The FK
+  // cascade clears any partially-inserted days/items.
+  const failAndCleanup = async (message: string): Promise<GenerateTripState> => {
+    await supabase.from("trips").delete().eq("id", trip.id);
+    return { error: message };
+  };
+
   // 2) Generate itinerary + packing in parallel
   let itinerary, packing;
   try {
@@ -139,7 +148,7 @@ export async function generateTripAction(
     ]);
   } catch (err) {
     console.error("[planner] AI generation failed:", err);
-    return { error: `AI 생성에 실패했어요: ${(err as Error).message}` };
+    return failAndCleanup(`AI 생성에 실패했어요: ${(err as Error).message}`);
   }
 
   // 3) Insert itinerary days
@@ -159,7 +168,7 @@ export async function generateTripAction(
     .from("itinerary_days")
     .insert(daysToInsert)
     .select("id, day_index");
-  if (daysErr || !insertedDays) return { error: daysErr?.message ?? "일정 저장 실패" };
+  if (daysErr || !insertedDays) return failAndCleanup(daysErr?.message ?? "일정 저장 실패");
 
   const dayIdByIndex = new Map(insertedDays.map((d) => [d.day_index, d.id]));
 
@@ -183,7 +192,7 @@ export async function generateTripAction(
   );
   if (itemsToInsert.length > 0) {
     const { error: itemsErr } = await supabase.from("itinerary_items").insert(itemsToInsert);
-    if (itemsErr) return { error: itemsErr.message };
+    if (itemsErr) return failAndCleanup(itemsErr.message);
   }
 
   // 5) Insert packing list + items
@@ -192,7 +201,7 @@ export async function generateTripAction(
     .insert({ trip_id: trip.id, user_id: user.id })
     .select("id")
     .single();
-  if (listErr || !list) return { error: listErr?.message ?? "체크리스트 저장 실패" };
+  if (listErr || !list) return failAndCleanup(listErr?.message ?? "체크리스트 저장 실패");
 
   const packingItems = packing.data.items.map((p, idx) => ({
     list_id: list.id,
@@ -206,7 +215,7 @@ export async function generateTripAction(
   }));
   if (packingItems.length > 0) {
     const { error: pErr } = await supabase.from("packing_items").insert(packingItems);
-    if (pErr) return { error: pErr.message };
+    if (pErr) return failAndCleanup(pErr.message);
   }
 
   // 6) Mark trip as generated + persist AI metadata

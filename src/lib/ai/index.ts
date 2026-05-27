@@ -61,37 +61,52 @@ async function completeStructured<T>(
   options?: { provider?: AIProviderName; temperature?: number; maxTokens?: number },
 ): Promise<{ data: T; provider: AIProviderName; model: string }> {
   const provider = getProvider(options?.provider);
-  const result = await provider.complete({
-    system: prompt.system,
-    user: prompt.user,
-    temperature: options?.temperature,
-    maxTokens: options?.maxTokens,
-  });
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(result.text));
-  } catch (err) {
-    console.error("[AI] JSON parse failed. Raw response:\n", result.text);
-    throw new Error(
-      `AI returned invalid JSON (provider=${provider.name}): ${(err as Error).message}`,
-    );
-  }
+  // LLM output is nondeterministic — it occasionally returns malformed JSON or
+  // misses a schema constraint (e.g. wrong number of days). One retry absorbs
+  // these transient misses before the failure ever reaches the user. We only
+  // retry parse/validation failures, not provider/transport errors (those are
+  // usually config issues and shouldn't be silently hammered).
+  const MAX_ATTEMPTS = 2;
+  let lastError: Error | null = null;
 
-  const validation = schema.safeParse(parsed);
-  if (!validation.success) {
-    console.error("[AI] Schema validation failed:");
-    console.error("  Zod issues:", JSON.stringify(validation.error.issues, null, 2));
-    console.error("  Parsed payload:", JSON.stringify(parsed, null, 2).slice(0, 2000));
-    throw new Error(
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const result = await provider.complete({
+      system: prompt.system,
+      user: prompt.user,
+      temperature: options?.temperature,
+      maxTokens: options?.maxTokens,
+    });
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractJson(result.text));
+    } catch (err) {
+      lastError = new Error(
+        `AI returned invalid JSON (provider=${provider.name}): ${(err as Error).message}`,
+      );
+      console.error(`[AI] attempt ${attempt}/${MAX_ATTEMPTS} JSON parse failed.`);
+      continue;
+    }
+
+    const validation = schema.safeParse(parsed);
+    if (validation.success) {
+      return { data: validation.data, provider: provider.name, model: provider.model };
+    }
+
+    lastError = new Error(
       `AI response failed schema validation: ${validation.error.issues
         .slice(0, 3)
         .map((i) => `${i.path.join(".")} → ${i.message}`)
         .join("; ")}`,
     );
+    console.error(
+      `[AI] attempt ${attempt}/${MAX_ATTEMPTS} schema validation failed:`,
+      JSON.stringify(validation.error.issues.slice(0, 5)),
+    );
   }
 
-  return { data: validation.data, provider: provider.name, model: provider.model };
+  throw lastError ?? new Error("AI 응답 생성에 실패했습니다");
 }
 
 // ---------------------------------------------------------------------------
