@@ -12,6 +12,44 @@ export type GenerateTripState = {
   tripId?: string;
 };
 
+// Server-side throttle for the (paid) AI generation. The client already
+// disables the button while pending, but that won't stop a determined user
+// hammering it across tabs or calling the action directly — so we gate the AI
+// call on how many trips the user has created recently.
+const RATE_WINDOW_SECONDS = 60; // burst window
+const RATE_MAX_IN_WINDOW = 3; // max generations per burst window
+const DAILY_MAX = 20; // max generations per rolling 24h
+
+async function checkRateLimit(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+): Promise<string | null> {
+  const now = Date.now();
+  const burstSince = new Date(now - RATE_WINDOW_SECONDS * 1000).toISOString();
+  const daySince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ count: burstCount }, { count: dayCount }] = await Promise.all([
+    supabase
+      .from("trips")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", burstSince),
+    supabase
+      .from("trips")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", daySince),
+  ]);
+
+  if ((burstCount ?? 0) >= RATE_MAX_IN_WINDOW) {
+    return "요청이 너무 잦아요. 잠시 후 다시 시도해주세요.";
+  }
+  if ((dayCount ?? 0) >= DAILY_MAX) {
+    return "오늘 생성 한도를 모두 사용했어요. 내일 다시 시도해주세요.";
+  }
+  return null;
+}
+
 /**
  * Server action invoked by the planner form.
  * 1. Validates input.
@@ -41,6 +79,10 @@ export async function generateTripAction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "로그인이 필요합니다" };
+
+  // 0) Rate-limit before doing any paid work (draft insert + AI calls)
+  const limitError = await checkRateLimit(supabase, user.id);
+  if (limitError) return { error: limitError };
 
   // 1) Insert draft trip
   const title = `${input.destination} ${duration - 1}박 ${duration}일`;
